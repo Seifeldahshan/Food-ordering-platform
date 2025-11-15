@@ -26,6 +26,8 @@ public class SecurityConfig {
                         authorizeConfig ->{
                             authorizeConfig.requestMatchers("/api/auth/login").permitAll();
                             authorizeConfig.requestMatchers("/api/auth/refresh").permitAll();
+                            authorizeConfig.requestMatchers("/api/user/me").permitAll();
+                            authorizeConfig.requestMatchers("/api/admin/applications").permitAll();
                             authorizeConfig.anyRequest().authenticated();
                           }
                         )

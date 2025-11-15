@@ -2,6 +2,7 @@ package com.foodapp.foodhub.entity;
 
 
 import com.foodapp.foodhub.enums.Role;
+import com.foodapp.foodhub.enums.UserStatus;
 import jakarta.persistence.*;
 import lombok.*;
 import java.util.HashSet;
@@ -31,12 +32,16 @@ public class User extends BaseEntity {
 
     private String phone;
 
-
+    @Column(name = "role", nullable = false)
     @Enumerated(EnumType.STRING)
     private Role role;
+    @Column(name = "status", nullable = false)
+    @Enumerated(EnumType.STRING)
+    private UserStatus status;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<UserAddress> addresses = new HashSet<>();
+
 
     @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL)
     private Set<Restaurant> restaurants = new HashSet<>();

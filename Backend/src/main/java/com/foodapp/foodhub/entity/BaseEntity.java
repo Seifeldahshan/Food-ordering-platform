@@ -1,9 +1,7 @@
 package com.foodapp.foodhub.entity;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.ToString;
+import lombok.*;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedBy;
@@ -16,6 +14,8 @@ import java.time.LocalDateTime;
 @ToString
 @MappedSuperclass
 @EntityListeners(AuditingEntityListener.class)
+@NoArgsConstructor
+@AllArgsConstructor
 public class BaseEntity {
 
     @CreatedDate
