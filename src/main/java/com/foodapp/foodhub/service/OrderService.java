@@ -1,13 +1,17 @@
 package com.foodapp.foodhub.service;
 
-import com.foodapp.foodhub.dto.CheckoutRequestDTO;
+import com.foodapp.foodhub.dto.cart.CheckoutRequestDTO;
 import com.foodapp.foodhub.entity.*;
 import com.foodapp.foodhub.enums.OrderStatus;
+import com.foodapp.foodhub.exceptions.CartEmptyException;
+import com.foodapp.foodhub.exceptions.CartNotFoundException;
+import com.foodapp.foodhub.exceptions.InvalidOrderStatusTransitionException;
+import com.foodapp.foodhub.exceptions.OrderNotFoundException;
+import com.foodapp.foodhub.exceptions.OutsideDeliveryZoneException;
+import com.foodapp.foodhub.exceptions.RestaurantNotFoundException;
 import com.foodapp.foodhub.repository.*;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.util.HashSet;
@@ -33,7 +37,7 @@ public class OrderService {
 
 
         Restaurant restaurant = restaurantRepository.findById(request.getRestaurantId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Restaurant not found"));
+                .orElseThrow(RestaurantNotFoundException::new);
 
         // CHECK the customer's delivery address is still in the zone
         boolean isInZone = zoneService.isWithinDeliveryZone(
@@ -45,13 +49,13 @@ public class OrderService {
         );
 
         if (!isInZone) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Delivery address is outside the restaurant's zone.");
+            throw new OutsideDeliveryZoneException();
         }
         Cart cart = cartRepository.findByUserId(request.getUserId())
-                .orElseThrow(() -> new RuntimeException("Cart not found"));
+                .orElseThrow(CartNotFoundException::new);
 
         if (cart.getItems().isEmpty()) {
-            throw new RuntimeException("Cart is empty");
+            throw new CartEmptyException();
         }
 
         User user = cart.getUser();
@@ -110,12 +114,12 @@ public class OrderService {
     public Order updateStatus(Long orderId, OrderStatus newStatus) {
 
         Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new RuntimeException("Order not found"));
+                .orElseThrow(OrderNotFoundException::new);
 
         OrderStatus currentStatus = order.getStatus();
 
         if (!isValidTransition(currentStatus, newStatus)) {
-            throw new RuntimeException("Invalid status transition: "
+            throw new InvalidOrderStatusTransitionException("Invalid status transition: "
                     + currentStatus + " → " + newStatus);
         }
 

@@ -1,8 +1,8 @@
 package com.foodapp.foodhub.controller;
 
-import com.foodapp.foodhub.dto.ApplicationReviewDTO;
-import com.foodapp.foodhub.dto.RestaurantApplicationResponse;
-import com.foodapp.foodhub.dto.UserDto;
+import com.foodapp.foodhub.dto.restaurantApplication.ApplicationReviewDTO;
+import com.foodapp.foodhub.dto.restaurantApplication.RestaurantApplicationResponse;
+import com.foodapp.foodhub.dto.user.UserDto;
 import com.foodapp.foodhub.entity.User;
 import com.foodapp.foodhub.mappers.RestaurantApplicationMapper;
 import com.foodapp.foodhub.repository.RestaurantApplicationRepository;

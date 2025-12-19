@@ -1,6 +1,6 @@
 package com.foodapp.foodhub.controller;
 
-import com.foodapp.foodhub.dto.CheckoutRequestDTO;
+import com.foodapp.foodhub.dto.cart.CheckoutRequestDTO;
 import com.foodapp.foodhub.entity.Order;
 import com.foodapp.foodhub.enums.OrderStatus;
 import com.foodapp.foodhub.service.OrderService;

@@ -19,4 +19,5 @@ public class EmailService {
         message.setText("Your OTP is: " + otp + " It expires in " + expiryTime+ " minutes.");
         mailSender.send(message);
     }
+
 }

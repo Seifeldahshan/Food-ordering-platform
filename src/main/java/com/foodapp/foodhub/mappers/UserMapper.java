@@ -1,11 +1,10 @@
 package com.foodapp.foodhub.mappers;
 
-import com.foodapp.foodhub.dto.RestaurantDto;
-import com.foodapp.foodhub.dto.UserDto;
+import com.foodapp.foodhub.dto.restaurant.RestaurantDto;
+import com.foodapp.foodhub.dto.user.UserDto;
 import com.foodapp.foodhub.entity.User;
 import org.springframework.stereotype.Component;
 
-import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 

@@ -1,10 +1,12 @@
 package com.foodapp.foodhub.service;
 
-import com.foodapp.foodhub.dto.*;
+import com.foodapp.foodhub.dto.auth.*;
+import com.foodapp.foodhub.entity.EmailVerificationCode;
 import com.foodapp.foodhub.entity.OtpToken;
 import com.foodapp.foodhub.entity.Token;
 import com.foodapp.foodhub.entity.User;
 import com.foodapp.foodhub.enums.TokenType;
+import com.foodapp.foodhub.repository.EmailVerificationCodeRepository;
 import com.foodapp.foodhub.repository.OtpTokenRepository;
 import com.foodapp.foodhub.repository.TokenRepository;
 import com.foodapp.foodhub.repository.UserRepository;
@@ -13,6 +15,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.AuthenticationException;
@@ -21,28 +25,26 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import java.util.Random;
-
 @Service
 @RequiredArgsConstructor
-public class AuthenticationService {
+public class AuthenticationService
+{
     private final AuthenticationManager authenticationManager;
     private final UserService userService;
     private final OtpTokenRepository otpTokenRepository;
     private final JwtAuthService jwtService;
     private final TokenRepository tokenRepository;
     private final UserRepository userRepository;
-
     private final EmailService emailService;
-
     private  final PasswordEncoder passwordEncoder;
-
-
+    private final EmailVerificationCodeRepository emailVerificationCodeRepository;
     private final int OTP_EXPIRY_MINUTES = 5;
     private final int OTP_WAIT_SECONDS = 60;
     private final RestClient.Builder builder;
-
+    private final JavaMailSender mailSender;
     public AuthenticationResponse authenticate(AuthenticationRequest authenticationRequest) {
         try {
             authenticationManager.authenticate(
@@ -77,7 +79,7 @@ public class AuthenticationService {
     }
 
     public PasswordResponse sendOtp(ForgetPasswordRequest request) throws MessagingException {
-        User user = userRepository.findByEmail(request.getEmail());
+        User user = userRepository.findByEmail(request.getEmail()).get();
         if(user == null) {
             return PasswordResponse.builder()
                     .success(false)
@@ -110,7 +112,7 @@ public class AuthenticationService {
 
 
     public PasswordResponse resetPassword(ResetPasswordRequest request)  {
-        User user = userRepository.findByEmail(request.getEmail());
+        User user = userRepository.findByEmail(request.getEmail()).get();
         if(user == null) {
             return PasswordResponse.builder()
                     .message("user not found")
@@ -134,12 +136,6 @@ public class AuthenticationService {
                 .build();
 
     }
-
-
-
-
-
-
     void saveToken( String token, TokenType tokenType, User user) {
         var savedToken = Token.builder()
                 .user(user)
@@ -156,31 +152,28 @@ public class AuthenticationService {
         tokenRepository.revokeAllByType(user.getId(), tokenType);
     }
 
-    public AuthenticationResponse refreshToken(
-            HttpServletRequest request,
-            HttpServletResponse response
-    ) {
+    public AuthenticationResponse refreshToken(HttpServletRequest request, HttpServletResponse response)
+    {
         final String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
-
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+        if (authHeader == null || !authHeader.startsWith("Bearer "))
             return buildFailedResponse("No Refresh Token Found", null);
-        }
+
 
         final String refreshToken = authHeader.substring(7);
         final String username = jwtService.extractUsername(refreshToken);
 
-        if (username == null) {
+        if (username == null)
             return buildFailedResponse("The token doesn't contain username", refreshToken);
-        }
+
 
         var user = userRepository.findByUsername(username);
-        if (user == null) {
+        if (user == null)
             return buildFailedResponse("There is no such user", refreshToken);
-        }
 
-        if (!jwtService.isTokenValid(refreshToken, user, TokenType.REFRESH)) {
+
+        if (!jwtService.isTokenValid(refreshToken, user, TokenType.REFRESH))
             return buildFailedResponse("Invalid or expired refresh token", refreshToken);
-        }
+
 
         var accessToken = jwtService.generateToken(user);
 
@@ -204,7 +197,7 @@ public class AuthenticationService {
     }
 
     public PasswordResponse changePassword(ChangePasswordRequest request) {
-        User user = userRepository.findByEmail(request.getEmail());
+        User user = userRepository.findByEmail(request.getEmail()).get();
         if (user == null) {
             return PasswordResponse.builder()
                     .message("user not found")
@@ -226,5 +219,86 @@ public class AuthenticationService {
                 .success(true)
                 .build();
 
+    }
+
+    private void sendVerificationEmail(String email, String code)
+    {
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom("yyynny4@gmail.com");
+        message.setTo(email);
+        message.setSubject("Email Verification Code");
+        message.setText("Your verification code is: " + code + "\nThis code will expire in 5 minutes.");
+        mailSender.send(message);
+    }
+
+    public RegisterResponse sendVerificationCode(RegisterRequest request)
+    {
+        if (userRepository.findByEmail(request.getEmail()).isPresent())
+        {
+            return RegisterResponse.builder()
+                    .status("Failed")
+                    .message("Email already registered")
+                    .build();
+        }
+        String code = String.format("%04d", new Random().nextInt(10000));
+        EmailVerificationCode verification = EmailVerificationCode.builder()
+                .email(request.getEmail())
+                .code(code)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        emailVerificationCodeRepository.save(verification);
+        sendVerificationEmail(request.getEmail(), code);
+        return RegisterResponse.builder()
+                .status("Success")
+                .message("Verification code sent to your email")
+                .build();
+    }
+    public AuthenticationResponse verifyAndRegister(VerifyRequest verifyRequest, RegisterRequest registerRequest) {
+
+        Optional<EmailVerificationCode> verificationOpt =
+                emailVerificationCodeRepository.findTopByEmailOrderByCreatedAtDesc(verifyRequest.getEmail());
+
+        if (verificationOpt.isEmpty()) {
+            return AuthenticationResponse.builder()
+                    .status("Failed")
+                    .message("No verification code found")
+                    .build();
+        }
+
+        EmailVerificationCode verification = verificationOpt.get();
+
+        if (!verification.getCode().equals(verifyRequest.getCode()))
+        {
+            return AuthenticationResponse.builder()
+                    .status("Failed")
+                    .message("Invalid verification code")
+                    .build();
+        }
+        LocalDateTime now = LocalDateTime.now();
+        long minutesPassed = ChronoUnit.MINUTES.between(verification.getCreatedAt(), now);
+
+        if (minutesPassed > 5) {
+            return AuthenticationResponse.builder()
+                    .status("Failed")
+                    .message("Verification code expired")
+                    .build();
+        }
+
+        User user = User.builder()
+                .email(registerRequest.getEmail())
+                .password(passwordEncoder.encode(registerRequest.getPassword()))
+                .fullName(registerRequest.getFullName())
+                .phone(registerRequest.getPhone())
+                .build();
+        userRepository.save(user);
+        verification.setVerified(true);
+        emailVerificationCodeRepository.save(verification);
+        String token = jwtService.generateToken(user);
+        return AuthenticationResponse.builder()
+                .status("Success")
+                .message("Registration successful")
+                .accessToken(token)
+                .build();
     }
 }
