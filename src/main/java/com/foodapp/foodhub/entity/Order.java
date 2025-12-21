@@ -2,6 +2,8 @@ package com.foodapp.foodhub.entity;
 
 
 import com.foodapp.foodhub.enums.OrderStatus;
+import com.foodapp.foodhub.enums.PaymentMethod;
+import com.foodapp.foodhub.enums.PaymentStatus;
 import jakarta.persistence.*;
 import lombok.*;
 import java.math.BigDecimal;
@@ -28,8 +30,17 @@ public class Order extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private OrderStatus status = OrderStatus.PENDING;
 
+    @Enumerated(EnumType.STRING)
+    private PaymentMethod paymentMethod;
+
+    @Enumerated(EnumType.STRING)
+    private PaymentStatus paymentStatus;
+
     @Column(nullable = false)
     private BigDecimal totalAmount;
+
+    @Column(unique = true)
+    private String paymobOrderId;
 
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
