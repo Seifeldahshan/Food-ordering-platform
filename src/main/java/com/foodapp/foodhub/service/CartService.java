@@ -1,28 +1,26 @@
 package com.foodapp.foodhub.service;
 
 import com.foodapp.foodhub.entity.*;
+import com.foodapp.foodhub.exceptions.CartItemNotFoundException;
+import com.foodapp.foodhub.exceptions.CartNotFoundException;
+import com.foodapp.foodhub.exceptions.DifferentRestaurantsException;
+import com.foodapp.foodhub.exceptions.MealNotFoundException;
+import com.foodapp.foodhub.exceptions.UserNotFoundException;
 import com.foodapp.foodhub.repository.CartItemRepository;
 import com.foodapp.foodhub.repository.CartRepository;
 import com.foodapp.foodhub.repository.MealRepository;
 import com.foodapp.foodhub.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 @Service
-public class CartService {
-
-
-        private final CartRepository cartRepository;
-        private final CartItemRepository cartItemRepository;
-        private final UserRepository userRepository;
-        private final MealRepository mealRepository;
-
-    public CartService(CartRepository cartRepository, CartItemRepository cartItemRepository, UserRepository userRepository, MealRepository mealRepository) {
-        this.cartRepository = cartRepository;
-        this.cartItemRepository = cartItemRepository;
-        this.userRepository = userRepository;
-        this.mealRepository = mealRepository;
-    }
-
+@RequiredArgsConstructor
+public class CartService
+{
+    private final CartRepository cartRepository;
+    private final CartItemRepository cartItemRepository;
+    private final UserRepository userRepository;
+    private final MealRepository mealRepository;
     public Cart addItemToCart(Long userId, Long mealId, int quantity) {
 
             // Find or create cart
@@ -30,12 +28,12 @@ public class CartService {
                     .orElseGet(() -> {
                         Cart newCart = new Cart();
                         newCart.setUser(userRepository.findById(userId)
-                                .orElseThrow(() -> new RuntimeException("User not found")));
+                                .orElseThrow(UserNotFoundException::new));
                         return cartRepository.save(newCart);
                     });
 
             Meal meal = mealRepository.findById(mealId)
-                    .orElseThrow(() -> new RuntimeException("Meal not found"));
+                    .orElseThrow(MealNotFoundException::new);
 
              Restaurant mealRestaurant = meal.getRestaurant();
 
@@ -45,7 +43,7 @@ public class CartService {
 
             // 2️⃣ If restaurant does not match → user is mixing restaurants
             if (!cart.getRestaurant().getId().equals(mealRestaurant.getId())) {
-                throw new RuntimeException("You cannot add meals from different restaurants in one cart.");
+                throw new DifferentRestaurantsException();
             }
             // 3️⃣ Check if item already exists in cart
             CartItem existingItem = cart.getItems().stream()
@@ -64,10 +62,8 @@ public class CartService {
                 newItem.setUnitPrice(meal.getPrice());
                 newItem.setQuantity(quantity);
                 newItem.setCart(cart);
-
                 cart.getItems().add(newItem);
             }
-
             // 6️⃣ Save and return updated cart
             return cartRepository.save(cart);
         }
@@ -76,13 +72,13 @@ public class CartService {
 
         // 1️⃣ Find the user's cart
         Cart cart = cartRepository.findByUserId(userId)
-                .orElseThrow(() -> new RuntimeException("Cart not found"));
+                .orElseThrow(CartNotFoundException::new);
 
         // 2️⃣ Find the item to remove
         CartItem itemToRemove = cart.getItems().stream()
                 .filter(item -> item.getMeal().getId().equals(mealId))
                 .findFirst()
-                .orElseThrow(() -> new RuntimeException("Item not found in cart"));
+                .orElseThrow(CartItemNotFoundException::new);
 
         // 3️⃣ Remove from cart set
         cart.getItems().remove(itemToRemove);
@@ -98,7 +94,7 @@ public class CartService {
 
     public Cart getCart( Long userId){
         return cartRepository.findByUserId(userId)
-                .orElseThrow(()-> new RuntimeException("Cart not found"));
+                .orElseThrow(CartNotFoundException::new);
 
     }
 }

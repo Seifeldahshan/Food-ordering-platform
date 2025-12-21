@@ -1,14 +1,9 @@
 package com.foodapp.foodhub.entity;
-
 import com.foodapp.foodhub.enums.RestaurantStatus;
 import jakarta.persistence.*;
 import lombok.*;
-
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
-
 @Entity
 @Getter
 @Setter
@@ -35,7 +30,6 @@ public class Restaurant extends BaseEntity
     @Column(name = "status", nullable = false)
     @Enumerated(EnumType.STRING)
     private RestaurantStatus status;
-
     // The restaurant's  location
     @Column(name = "latitude")
     private double latitude;
@@ -55,6 +49,8 @@ public class Restaurant extends BaseEntity
     @JoinColumn(name = "owner_id", nullable = false)
     private User owner;
 
+    @OneToMany(mappedBy = "restaurant")
+    private List<Meal> meals = new ArrayList<>();
 
     @OneToMany(mappedBy = "restaurant", cascade = CascadeType.ALL)
     private List<Review> reviews = new ArrayList<>();

@@ -1,17 +1,19 @@
 package com.foodapp.foodhub.service;
 
-import com.foodapp.foodhub.dto.AddressRequestDto;
-import com.foodapp.foodhub.dto.AddressResponseDto;
+import com.foodapp.foodhub.dto.user.AddressRequestDto;
+import com.foodapp.foodhub.dto.user.AddressResponseDto;
 import com.foodapp.foodhub.entity.User;
 import com.foodapp.foodhub.entity.UserAddress;
+import com.foodapp.foodhub.exceptions.AddressNotFoundException;
+import com.foodapp.foodhub.exceptions.InvalidCoordinatesException;
+import com.foodapp.foodhub.exceptions.UnauthorizedAddressAccessException;
+import com.foodapp.foodhub.exceptions.UserNotFoundException;
 import com.foodapp.foodhub.mappers.AddressMapper;
 import com.foodapp.foodhub.repository.UserAddressRepository;
 import com.foodapp.foodhub.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -28,7 +30,7 @@ public class UserAddressService {
     public AddressResponseDto addAddress(Long userId, AddressRequestDto dto) {
 
         User user = userRepo.findById(userId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+                .orElseThrow(UserNotFoundException::new);
 
         validateLatLng(dto.getLatitude(), dto.getLongitude());
 
@@ -53,10 +55,10 @@ public class UserAddressService {
     public AddressResponseDto updateAddress(Long userId, Long addressId, AddressRequestDto dto) {
 
         UserAddress addr = addressRepo.findById(addressId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Address not found"));
+                .orElseThrow(AddressNotFoundException::new);
 
         if (!addr.getUser().getId().equals(userId)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Address not yours");
+            throw new UnauthorizedAddressAccessException();
         }
 
         validateLatLng(dto.getLatitude(), dto.getLongitude());
@@ -78,10 +80,10 @@ public class UserAddressService {
     public void deleteAddress(Long userId, Long addressId) {
 
         UserAddress addr = addressRepo.findById(addressId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Address not found"));
+                .orElseThrow(AddressNotFoundException::new);
 
         if (!addr.getUser().getId().equals(userId)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Address not yours");
+            throw new UnauthorizedAddressAccessException();
         }
 
         addressRepo.delete(addr);
@@ -105,10 +107,10 @@ public class UserAddressService {
 
     private void validateLatLng(Double lat, Double lng) {
         if (lat == null || lng == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Latitude & longitude required");
+            throw new InvalidCoordinatesException("Latitude & longitude required");
         }
         if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid coordinates");
+            throw new InvalidCoordinatesException("Invalid coordinates");
         }
     }
 }

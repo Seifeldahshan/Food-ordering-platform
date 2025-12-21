@@ -1,9 +1,8 @@
 package com.foodapp.foodhub.controller;
 
-import com.foodapp.foodhub.dto.AddressRequestDto;
-import com.foodapp.foodhub.dto.AddressResponseDto;
+import com.foodapp.foodhub.dto.user.AddressRequestDto;
+import com.foodapp.foodhub.dto.user.AddressResponseDto;
 import com.foodapp.foodhub.service.UserAddressService;
-import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -36,12 +35,12 @@ public class UserAddressController {
     }
 
     @DeleteMapping("/{userId}/{addressId}")
-    public ResponseEntity<String> deleteAddress(@PathVariable Long addressId, @PathVariable Long userId) {
-        addressService.deleteAddress(addressId , userId);
+    public ResponseEntity<String> deleteAddress(@PathVariable Long userId, @PathVariable Long addressId) {
+        addressService.deleteAddress(userId, addressId);
         return ResponseEntity.ok("Address deleted");
     }
 
-    @PutMapping("/{addressId}")
+    @PutMapping("/{userId}/{addressId}")
     public ResponseEntity<AddressResponseDto> updateAddress(
             @PathVariable Long userId,
             @PathVariable Long addressId,

@@ -1,7 +1,7 @@
 package com.foodapp.foodhub.mappers;
 
-import com.foodapp.foodhub.dto.AddressRequestDto;
-import com.foodapp.foodhub.dto.AddressResponseDto;
+import com.foodapp.foodhub.dto.user.AddressRequestDto;
+import com.foodapp.foodhub.dto.user.AddressResponseDto;
 import com.foodapp.foodhub.entity.UserAddress;
 
 public class AddressMapper {

@@ -1,9 +1,9 @@
 package com.foodapp.foodhub.mappers;
 
-import com.foodapp.foodhub.dto.RestaurantApplicationDto;
-import com.foodapp.foodhub.dto.RestaurantApplicationRequest;
-import com.foodapp.foodhub.dto.RestaurantApplicationResponse;
-import com.foodapp.foodhub.dto.RestaurantDto;
+import com.foodapp.foodhub.dto.restaurantApplication.RestaurantApplicationDto;
+import com.foodapp.foodhub.dto.restaurantApplication.RestaurantApplicationRequest;
+import com.foodapp.foodhub.dto.restaurantApplication.RestaurantApplicationResponse;
+import com.foodapp.foodhub.dto.restaurant.RestaurantDto;
 import com.foodapp.foodhub.entity.Restaurant;
 import com.foodapp.foodhub.entity.RestaurantApplication;
 import com.foodapp.foodhub.entity.User;

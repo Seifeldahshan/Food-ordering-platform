@@ -1,19 +1,19 @@
 package com.foodapp.foodhub.service;
-import com.foodapp.foodhub.dto.*;
+import com.foodapp.foodhub.dto.restaurant.RestaurantDto;
+import com.foodapp.foodhub.dto.restaurantApplication.ApplicationReviewDTO;
+import com.foodapp.foodhub.dto.restaurantApplication.CompleteRestaurantDataRequest;
+import com.foodapp.foodhub.dto.restaurantApplication.RestaurantApplicationRequest;
+import com.foodapp.foodhub.dto.restaurantApplication.RestaurantApplicationResponse;
 import com.foodapp.foodhub.entity.*;
 import com.foodapp.foodhub.enums.RestaurantApplicationStatus;
 import com.foodapp.foodhub.enums.RestaurantStatus;
 import com.foodapp.foodhub.enums.Role;
 import com.foodapp.foodhub.enums.UserStatus;
+import com.foodapp.foodhub.exceptions.*;
 import com.foodapp.foodhub.mappers.RestaurantApplicationMapper;
 import com.foodapp.foodhub.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-
-import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.Set;
-
 @Service
 @RequiredArgsConstructor
 public class RestaurantApplicationService
@@ -26,9 +26,9 @@ public class RestaurantApplicationService
     public RestaurantApplicationResponse createApplication (User user , RestaurantApplicationRequest request)
     {
         if (restaurantApplicationRepository.findByOwner(user)!=null) //already has an application
-            throw new RuntimeException("You have already submitted an application. Wait for Admin Response");
+            throw new PendingApplicationException();
         if (userRepository.findById(user.getId()).get().getStatus()== UserStatus.DISABLED)
-            throw new RuntimeException("Your Account is disabled.");
+            throw new AccountIsDisabledException();
         RestaurantApplication app = restaurantApplicationMapper.toEntity(request,user);
         RestaurantApplication saved = restaurantApplicationRepository.save(app);
         return restaurantApplicationMapper.toResponse(saved);
@@ -38,9 +38,9 @@ public class RestaurantApplicationService
     public RestaurantApplicationResponse reviewApplication(Long appId, User admin , ApplicationReviewDTO reviewDTO )
     {
         RestaurantApplication app = restaurantApplicationRepository.findById(appId)
-                .orElseThrow(() -> new RuntimeException("Application not found."));
+                .orElseThrow(() -> new ApplicationNotFoundException());
         if (restaurantApplicationRepository.findById(appId).get().getOwner().getStatus()==UserStatus.DISABLED)
-            throw new RuntimeException("User's Account is disabled.");
+            throw new AccountIsDisabledException();
         app.setStatus(reviewDTO.getStatus());
         app.setReviewedBy(admin);
         if (reviewDTO.getStatus() == RestaurantApplicationStatus.APPROVED)
@@ -63,20 +63,19 @@ public class RestaurantApplicationService
     public RestaurantDto completeRestaurantData(User owner, CompleteRestaurantDataRequest request)
     {
         Restaurant restaurant = restaurantRepository.findRestaurantByOwner(owner);
+        if (restaurant == null)
+            throw new RestaurantNotFoundException();
         restaurant.setDescription(request.getDescription());
         restaurant.setAddress(request.getAddress());
+        restaurant.setLatitude(request.getLatitude());
+        restaurant.setLongitude(request.getLongitude());
         restaurant.setImageUrl(request.getImageUrl());
         if (request.getSubcategoryId() != null)
         {
             Subcategory subcategory = subcategoryRepository.findById(request.getSubcategoryId())
-                    .orElseThrow(() -> new RuntimeException("Subcategory not found."));
+                    .orElseThrow(() -> new SubcategoryNotFoundException());
             restaurant.setSubcategory(subcategory);
         }
-//        if (request.getZoneIds() != null && !request.getZoneIds().isEmpty())
-//        {
-//            Set<Zone> zones = new HashSet<>(zoneRepository.findAllById(request.getZoneIds()));
-//            restaurant.setZones(zones);
-//        }
         restaurantRepository.save(restaurant);
         return restaurantApplicationMapper.restaurantToDto(restaurant);
     }

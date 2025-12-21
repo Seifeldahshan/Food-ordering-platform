@@ -1,8 +1,8 @@
 package com.foodapp.foodhub.mappers;
 
 
-import com.foodapp.foodhub.dto.CartItemResponseDTO;
-import com.foodapp.foodhub.dto.CartResponseDTO;
+import com.foodapp.foodhub.dto.cart.CartItemResponseDTO;
+import com.foodapp.foodhub.dto.cart.CartResponseDTO;
 import com.foodapp.foodhub.entity.Cart;
 import com.foodapp.foodhub.entity.CartItem;
 
