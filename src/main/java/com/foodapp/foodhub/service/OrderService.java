@@ -3,6 +3,7 @@ package com.foodapp.foodhub.service;
 import com.foodapp.foodhub.dto.cart.CheckoutRequestDTO;
 import com.foodapp.foodhub.entity.*;
 import com.foodapp.foodhub.enums.OrderStatus;
+import com.foodapp.foodhub.enums.PaymentStatus;
 import com.foodapp.foodhub.exceptions.CartEmptyException;
 import com.foodapp.foodhub.exceptions.CartNotFoundException;
 import com.foodapp.foodhub.exceptions.InvalidOrderStatusTransitionException;
@@ -10,6 +11,7 @@ import com.foodapp.foodhub.exceptions.OrderNotFoundException;
 import com.foodapp.foodhub.exceptions.OutsideDeliveryZoneException;
 import com.foodapp.foodhub.exceptions.RestaurantNotFoundException;
 import com.foodapp.foodhub.repository.*;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -25,8 +27,8 @@ public class OrderService {
     private final CartRepository cartRepository;
     private final CartItemRepository cartItemRepository;
     private final OrderRepository orderRepository;
-    private final RestaurantRepository restaurantRepository; // if needed
-    private final UserRepository userRepository;
+    private final RestaurantRepository restaurantRepository;
+
     private final ZoneService zoneService;
 
     public List<Order> getAllOrders() {
@@ -142,10 +144,23 @@ public class OrderService {
 
             case OUT_FOR_DELIVERY -> (next == OrderStatus.DELIVERED);
 
-            case DELIVERED -> false; // Delivered is final.
+            case DELIVERED -> false;
 
-            case CANCELLED -> false; // Cancelled is final.
+            case CANCELLED -> false;
         };
+    }
+    @Transactional
+    public void completeOrderPayment(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found"));
+
+        if (order.getPaymentStatus() == PaymentStatus.PAID) {
+            return;
+        }
+
+        order.setPaymentStatus(PaymentStatus.PAID);
+        order.setStatus(OrderStatus.CONFIRMED);
+        orderRepository.save(order);
     }
 
 
