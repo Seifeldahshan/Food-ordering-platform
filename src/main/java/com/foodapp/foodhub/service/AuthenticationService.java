@@ -5,7 +5,9 @@ import com.foodapp.foodhub.entity.EmailVerificationCode;
 import com.foodapp.foodhub.entity.OtpToken;
 import com.foodapp.foodhub.entity.Token;
 import com.foodapp.foodhub.entity.User;
+import com.foodapp.foodhub.enums.Role;
 import com.foodapp.foodhub.enums.TokenType;
+import com.foodapp.foodhub.enums.UserStatus;
 import com.foodapp.foodhub.repository.EmailVerificationCodeRepository;
 import com.foodapp.foodhub.repository.OtpTokenRepository;
 import com.foodapp.foodhub.repository.TokenRepository;
@@ -278,7 +280,9 @@ public class AuthenticationService
         LocalDateTime now = LocalDateTime.now();
         long minutesPassed = ChronoUnit.MINUTES.between(verification.getCreatedAt(), now);
 
-        if (minutesPassed > 5) {
+
+        // TODO :: change to 5 or 10 , 30 just for testing and the message also
+        if (minutesPassed > 30) {
             return AuthenticationResponse.builder()
                     .status("Failed")
                     .message("Verification code expired")
@@ -290,15 +294,22 @@ public class AuthenticationService
                 .password(passwordEncoder.encode(registerRequest.getPassword()))
                 .fullName(registerRequest.getFullName())
                 .phone(registerRequest.getPhone())
+                .role(Role.USER)
+                .status(UserStatus.ACTIVE)
                 .build();
         userRepository.save(user);
         verification.setVerified(true);
         emailVerificationCodeRepository.save(verification);
         String token = jwtService.generateToken(user);
+        String refreshToken = jwtService.generateRefreshToken(user);
+        saveToken(token, TokenType.ACCESS, user);
+        saveToken(refreshToken, TokenType.REFRESH, user);
+
         return AuthenticationResponse.builder()
                 .status("Success")
                 .message("Registration successful")
                 .accessToken(token)
+                .refreshToken(refreshToken)
                 .build();
     }
 }

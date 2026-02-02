@@ -35,6 +35,7 @@ public class AuthenticationController
     private final UserRepository userRepository;
     private final OtpService otpService;
     private final EmailService emailService;
+
     @PostMapping("/private")
     public String page(){
         return "hello , VIP";
@@ -101,11 +102,14 @@ public class AuthenticationController
     }
 
     @PostMapping("/verify-email")
-    public ResponseEntity<AuthenticationResponse> verifyEmail(@Valid @RequestBody VerifyRequest verifyRequest, @Valid @RequestBody RegisterRequest registerRequest) {
+    public ResponseEntity<AuthenticationResponse> verifyEmail(@Valid @RequestBody RegisterAndVerifyRequest request) {
 
-        AuthenticationResponse response = authenticationService.verifyAndRegister(verifyRequest, registerRequest);
-        if (response.getStatus().equals("Failed"))
+        AuthenticationResponse response = authenticationService.verifyAndRegister(
+                request.getVerifyRequest(), request.getRegisterRequest());
+
+        if ("Failed".equals(response.getStatus())) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+        }
         return ResponseEntity.ok(response);
     }
 
