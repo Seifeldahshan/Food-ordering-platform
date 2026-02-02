@@ -32,6 +32,8 @@ public class SecurityConfig
                             authorizeConfig.requestMatchers("/api/auth/logout").permitAll();
                             authorizeConfig.requestMatchers("/api/auth/forget-password").permitAll();
                             authorizeConfig.requestMatchers("/api/auth/reset-password").permitAll();
+                            authorizeConfig.requestMatchers("/api/auth/verify-email").permitAll();
+                            authorizeConfig.requestMatchers("/api/auth/register").permitAll();
                             authorizeConfig.requestMatchers("/api/address/*").permitAll();
 
                             authorizeConfig.anyRequest().authenticated();
